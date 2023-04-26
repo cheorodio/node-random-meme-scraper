@@ -1,0 +1,17 @@
+{
+  "name": "node-random-meme-scraper",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "eslint-config-upleveled": "^4.1.8",
+    "typescript": "^5.0.4"
+  }
+}
