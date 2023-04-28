@@ -1,0 +1,109 @@
+name: Test Project
+on: push
+
+jobs:
+  test:
+    name: Test Project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 'latest'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+      - name: Install project dependencies
+        run: pnpm install
+      - name: Create test file
+        # Create a test file that will run index.js from the project
+        # with Node.js and check whether
+        # - No ./memes directory exists before the program runs
+        # - The ./memes directory exists after the program runs
+        # - The first 10 images have been downloaded to ./memes
+        # - The 10 images have matching SHA-256 hashes
+        # - The program can run multiple times without errors
+        run: |
+          cat > test.js <<'END_SCRIPT'
+            import { exec } from 'node:child_process';
+            import { createHash } from 'node:crypto';
+            import { existsSync } from 'node:fs';
+            import { readdir, readFile } from 'node:fs/promises';
+            import { promisify } from 'node:util';
+
+            const execAsync = promisify(exec);
+
+            if (existsSync('./memes')) {
+              console.log(
+                '❌ `node index.js` pre-run 1: The directory `memes` already exists',
+              );
+              process.exit(1);
+            }
+
+            await execAsync('node index.js');
+
+            const expectedFileHashes = {
+              '01.jpg': '06c1c81f76013e5a6e66e21d1af5aa258c15d7fd7ea65f947dc7b44fc92c3061',
+              '02.jpg': 'fdfd8e8a9d2c501965d09a0d3905a0a287e920f2e7eafb52a48157341043f2fe',
+              '03.jpg': 'dcc4142faa19734e67922423f4c7d1b64906aa1b48ad605fc104ea7f380157d5',
+              '04.jpg': 'f23d709689f96c25e743e6e6660382a8f1ca62f41531c14d90bddf56a773b058',
+              '05.jpg': 'b1d802552e8a3909fe1d62f66350faf82c36eac9d088d50026116d933ab2f013',
+              '06.jpg': 'f181c05259b8c72b89e75b37e4aa5f3869f7c90441940fd31005e5e3345ef8a2',
+              '07.jpg': '53801b2d2dae10e62af6d69121884d40852eabf0f9d8d8fa6a4ac41262f69f28',
+              '08.jpg': '47dd2de3c1633e624c582010fd4ee9cca60a7e612835b4d89f98ca199da397d5',
+              '09.jpg': 'e43726ea077f7b0b9ad7efaed0fb1967b963de98e3a3f89850b76cabf9153831',
+              '10.jpg': '1bdd6a22b1aab4a31f0a5029fcdbfce28973707c57708f151593897485a3a67e',
+            };
+
+            // Read all files in directory and print the SHA-256 hash of each file
+            const files = await readdir('./memes');
+
+            const filesAsString = files.join(',');
+            const expectedFilesAsString = Object.keys(expectedFileHashes).join(',');
+
+            if (filesAsString !== expectedFilesAsString) {
+              console.log(
+                `❌ \`node index.js\` run 1: Files in directory \`memes\` (${filesAsString}) do not match expected files (${expectedFilesAsString})`,
+              );
+              process.exit(1);
+            }
+
+            console.log('✔️ `node index.js` run 1: All expected files exist');
+
+            let anyFileHashesFailedMatch;
+
+            for (const file of files) {
+              const hash = createHash('sha256');
+              hash.update(await readFile(`./memes/${file}`));
+              const fileHash = hash.digest('hex');
+
+              if (fileHash !== expectedFileHashes[file]) {
+                console.log(
+                  `❌ \`node index.js\` run 1: Hash for \`memes/${file}\` ${fileHash} does not match expected hash ${expectedFileHashes[file]}`,
+                );
+                anyFileHashesFailedMatch = true;
+              }
+            }
+
+            if (anyFileHashesFailedMatch) {
+              process.exit(1);
+            }
+
+            console.log('✔️ `node index.js` run 1: All files match expected hashes');
+
+            try {
+              await execAsync('node index.js');
+            } catch (error) {
+              console.log(
+                `❌ \`node index.js\` run 2: Error thrown during second run ("${error.message}")`,
+              );
+              process.exit(0);
+            }
+
+            console.log('✔️ `node index.js` run 2: No error thrown during second run');
+
+            console.log('✔️ All tests passed!');
+          END_SCRIPT
+      - name: Run test file
+        run: node test.js

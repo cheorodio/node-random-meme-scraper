@@ -46,9 +46,14 @@ async function download(url, filepath) {
   });
 }
 
-// for loop to download each link
+// format the naming of the images
+function format(n) {
+  return (n < 10 ? '0' : '') + n;
+}
+
+// for loop to download each image
 for (let i = 0; i < 10; i++) {
   const imageUrl = filteredImgUrls[i];
-  const imageName = `memes/0${i + 1}.jpg`;
+  const imageName = `memes/${format(i + 1)}.jpg`;
   await download(imageUrl, imageName);
 }
