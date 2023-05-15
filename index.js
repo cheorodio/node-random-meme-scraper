@@ -3,15 +3,11 @@ import axios from 'axios';
 import { load } from 'cheerio';
 
 // create memes folder
-try {
-  if (!fs.existsSync('memes')) {
-    fs.mkdirSync('memes');
-  }
-} catch (err) {
-  console.error(err);
+if (!fs.existsSync('memes')) {
+  fs.mkdirSync('memes');
 }
 
-const imgUrls = [];
+const imageUrls = [];
 
 // extract HTML from the URL
 const html = await axios.get(
@@ -19,17 +15,17 @@ const html = await axios.get(
 );
 const $ = load(html.data);
 
-// get the img source from the HTML
-const imgs = $('div');
-imgs.each(function () {
+// get the image source from the HTML
+const images = $('div');
+images.each(function () {
   const image = $(this).find('img').attr('src');
 
-  // save the img sources in an array
-  imgUrls.push(image);
+  // save the image sources in an array
+  imageUrls.push(image);
 });
 
 // get only the first 10 images
-const filteredImgUrls = imgUrls.slice(3, 13);
+const filteredImageUrls = imageUrls.slice(3, 13);
 
 // download the images
 async function download(url, filepath) {
@@ -53,7 +49,7 @@ function format(n) {
 
 // for loop to download each image
 for (let i = 0; i < 10; i++) {
-  const imageUrl = filteredImgUrls[i];
+  const imageUrl = filteredImageUrls[i];
   const imageName = `memes/${format(i + 1)}.jpg`;
   await download(imageUrl, imageName);
 }
